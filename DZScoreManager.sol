@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "./DZExamManager.sol";
+import "./DZStudentAnswer.sol";
 
-abstract contract DZScoreManager is DZExamManager {
+abstract contract DZScoreManager is DZStudentAnswer {
     struct Score {
         uint256 student_id;
         uint256 exam_id;
@@ -58,6 +58,30 @@ abstract contract DZScoreManager is DZExamManager {
 
         examScores[_exam_id].push(_student_id);
         emit ScoreStored(_student_id, _exam_id, _score, msg.sender);
+    }
+
+    function createScoreFromAnswer(uint256 _student_id, uint256 _exam_id) 
+        public 
+        onlyRole(LECTURER_ROLE) 
+    {
+        require(studentAnswers[_student_id][_exam_id].is_submitted, "Answer not submitted");
+        require(studentAnswers[_student_id][_exam_id].is_scored, "Answer not scored yet");
+        require(scores[_student_id][_exam_id].student_id == 0, "Score already exists");
+
+        uint256 answerScore = studentAnswers[_student_id][_exam_id].score;
+        
+        scores[_student_id][_exam_id] = Score({
+            student_id: _student_id,
+            exam_id: _exam_id,
+            score: answerScore,
+            graded_by: studentAnswers[_student_id][_exam_id].scored_by,
+            created_at: block.timestamp,
+            updated_at: block.timestamp,
+            is_final: false
+        });
+
+        examScores[_exam_id].push(_student_id);
+        emit ScoreStored(_student_id, _exam_id, answerScore, msg.sender);
     }
 
     function updateScore(

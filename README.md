@@ -41,7 +41,13 @@ DZBlockChain là một smart contract được phát triển trên blockchain Et
 - Theo dõi lịch sử thay đổi
 - Kiểm soát quyền truy cập log
 
-### 8. **Chứng chỉ NFT**
+### 8. **Quản lý bài làm sinh viên (Student Answer)**
+- Sinh viên nộp bài làm với hash nội dung
+- Giảng viên chấm điểm bài làm
+- Theo dõi thời gian nộp bài và chấm điểm
+- Truy xuất bài làm theo student_id và exam_id
+
+### 9. **Chứng chỉ NFT**
 - Phát hành chứng chỉ dưới dạng NFT
 - Xác minh tính hợp lệ của chứng chỉ
 - Thu hồi chứng chỉ khi cần thiết
@@ -188,7 +194,103 @@ function getUserTests(uint256 _user_id) public view returns (uint256[] memory)
 **Tham số**: `_user_id` - ID của user  
 **Trả về**: Mảng các test ID
 
-### E. Quản lý điểm số
+### E. Quản lý bài làm sinh viên (Student Answer)
+
+#### 1. Nộp bài làm
+```solidity
+function submitAnswer(uint256 _student_id, uint256 _exam_id, string memory _content) public onlyRole(STUDENT_ROLE)
+```
+**Mô tả**: Sinh viên nộp bài làm cho một bài thi  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi
+- `_content`: Hash của tất cả câu trả lời  
+**Quyền**: Chỉ STUDENT_ROLE  
+**Điều kiện**: Sinh viên chỉ có thể nộp bài cho chính mình, bài thi chưa bị khóa
+
+#### 2. Nộp bài làm của tôi
+```solidity
+function submitMyAnswer(uint256 _exam_id, string memory _content) public onlyRole(STUDENT_ROLE)
+```
+**Mô tả**: Sinh viên nộp bài làm của mình (tự động lấy student_id từ địa chỉ)  
+**Tham số**:
+- `_exam_id`: ID của bài thi
+- `_content`: Hash của tất cả câu trả lời  
+**Quyền**: Chỉ STUDENT_ROLE
+
+#### 3. Chấm điểm bài làm
+```solidity
+function scoreAnswer(uint256 _student_id, uint256 _exam_id, uint256 _score) public onlyRole(LECTURER_ROLE)
+```
+**Mô tả**: Giảng viên chấm điểm cho bài làm của sinh viên  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi
+- `_score`: Điểm số (0-100)  
+**Quyền**: Chỉ LECTURER_ROLE  
+**Điều kiện**: Bài làm đã được nộp
+
+#### 4. Cập nhật điểm bài làm
+```solidity
+function updateAnswerScore(uint256 _student_id, uint256 _exam_id, uint256 _new_score) public onlyRole(LECTURER_ROLE)
+```
+**Mô tả**: Cập nhật điểm số cho bài làm đã được chấm  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi
+- `_new_score`: Điểm số mới (0-100)  
+**Quyền**: Chỉ LECTURER_ROLE
+
+#### 5. Xem bài làm của sinh viên
+```solidity
+function getStudentAnswer(uint256 _student_id, uint256 _exam_id) public view returns (StudentAnswer memory)
+```
+**Mô tả**: Xem thông tin bài làm của sinh viên  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi  
+**Quyền**: LECTURER_ROLE, ADMIN_ROLE hoặc chính sinh viên đó  
+**Trả về**: Thông tin chi tiết bài làm
+
+#### 6. Xem bài làm của tôi
+```solidity
+function getMyAnswer(uint256 _exam_id) public view onlyRole(STUDENT_ROLE) returns (StudentAnswer memory)
+```
+**Mô tả**: Sinh viên xem bài làm của chính mình  
+**Tham số**: `_exam_id` - ID của bài thi  
+**Quyền**: Chỉ STUDENT_ROLE
+
+#### 7. Lấy danh sách bài nộp của bài thi
+```solidity
+function getExamSubmissions(uint256 _exam_id) public view returns (uint256[] memory)
+```
+**Mô tả**: Lấy danh sách ID sinh viên đã nộp bài cho bài thi  
+**Tham số**: `_exam_id` - ID của bài thi  
+**Quyền**: LECTURER_ROLE hoặc ADMIN_ROLE  
+**Trả về**: Mảng các student_id
+
+#### 8. Kiểm tra đã nộp bài
+```solidity
+function hasSubmittedAnswer(uint256 _student_id, uint256 _exam_id) public view returns (bool)
+```
+**Mô tả**: Kiểm tra sinh viên đã nộp bài cho bài thi hay chưa  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi  
+**Trả về**: true nếu đã nộp, false nếu chưa
+
+#### 9. Lấy điểm bài làm
+```solidity
+function getAnswerScore(uint256 _student_id, uint256 _exam_id) public view returns (uint256)
+```
+**Mô tả**: Lấy điểm số của bài làm  
+**Tham số**:
+- `_student_id`: ID của sinh viên
+- `_exam_id`: ID của bài thi  
+**Quyền**: LECTURER_ROLE, ADMIN_ROLE hoặc chính sinh viên đó  
+**Trả về**: Điểm số của bài làm
+
+### F. Quản lý điểm số
 
 #### 1. Lưu điểm số
 ```solidity
@@ -243,7 +345,7 @@ function getMyScore(uint256 _exam_id) public view onlyRole(STUDENT_ROLE) returns
 **Quyền**: Chỉ STUDENT_ROLE  
 **Trả về**: Thông tin điểm số chi tiết
 
-### F. Hệ thống phúc khảo
+### G. Hệ thống phúc khảo
 
 #### 1. Yêu cầu phúc khảo
 ```solidity
@@ -275,7 +377,7 @@ function getMyReviewRequest(uint256 _exam_id) public view onlyRole(STUDENT_ROLE)
 **Tham số**: `_exam_id` - ID của bài thi  
 **Quyền**: Chỉ STUDENT_ROLE
 
-### G. Hệ thống truy vết (Trace System)
+### H. Hệ thống truy vết (Trace System)
 
 #### 1. Xem lịch sử truy vết
 ```solidity
@@ -305,7 +407,7 @@ struct TraceRecord {
 }
 ```
 
-### H. Quản lý chứng chỉ NFT
+### I. Quản lý chứng chỉ NFT
 
 #### 1. Phát hành chứng chỉ
 ```solidity
@@ -346,7 +448,7 @@ function getMyCertificate(uint256 _student_id, uint256 _exam_id) public view onl
 - `_exam_id`: ID của bài thi  
 **Quyền**: Chỉ STUDENT_ROLE
 
-### I. Các hàm hỗ trợ
+### J. Các hàm hỗ trợ
 
 #### 1. Lấy danh sách bài thi của giảng viên
 ```solidity
@@ -399,7 +501,23 @@ struct Exam {
 }
 ```
 
-### 4. Score
+### 4. StudentAnswer
+```solidity
+struct StudentAnswer {
+    uint256 student_id;    // ID sinh viên
+    uint256 exam_id;       // ID bài thi
+    string content;        // Hash của tất cả câu trả lời
+    uint256 score;         // Điểm sau khi chấm (default = 0)
+    uint256 submitted_at;  // Thời gian nộp bài
+    address submitted_by;  // Địa chỉ nộp bài
+    uint256 scored_at;     // Thời gian chấm điểm
+    address scored_by;     // Giảng viên chấm điểm
+    bool is_submitted;     // Đã nộp bài chưa
+    bool is_scored;        // Đã chấm điểm chưa
+}
+```
+
+### 5. Score
 ```solidity
 struct Score {
     uint256 student_id;    // ID sinh viên
@@ -412,7 +530,7 @@ struct Score {
 }
 ```
 
-### 5. Certificate
+### 6. Certificate
 ```solidity
 struct Certificate {
     uint256 tokenId;       // ID NFT
@@ -442,6 +560,11 @@ Contract phát ra các sự kiện quan trọng để theo dõi hoạt động:
 - `TestCreated`: Khi tạo test mới
 - `TestBlocked`: Khi chặn test
 - `TestUnblocked`: Khi bỏ chặn test
+
+### Quản lý bài làm sinh viên
+- `AnswerSubmitted`: Khi sinh viên nộp bài làm
+- `AnswerScored`: Khi giảng viên chấm điểm bài làm
+- `AnswerUpdated`: Khi cập nhật điểm bài làm
 
 ### Quản lý điểm số
 - `ScoreStored`: Khi lưu điểm số
@@ -486,11 +609,13 @@ Contract được trang bị các tính năng bảo mật:
 2. Giảng viên tạo bài thi (có thể dùng storeExamWithTrace để ghi log)
 3. Admin có thể chặn/bỏ chặn tests khi cần
 
-### 3. Chấm điểm và phúc khảo
-1. Giảng viên nhập điểm (có thể dùng storeScoreWithTrace)
-2. Sinh viên xem điểm và yêu cầu phúc khảo nếu cần
-3. Giảng viên xử lý phúc khảo
-4. Giảng viên finalize điểm
+### 3. Nộp bài và chấm điểm
+1. Sinh viên nộp bài làm (submitMyAnswer) với hash nội dung
+2. Giảng viên chấm điểm bài làm (scoreAnswer)
+3. Giảng viên có thể tạo Score từ StudentAnswer (createScoreFromAnswer)
+4. Sinh viên xem điểm và yêu cầu phúc khảo nếu cần
+5. Giảng viên xử lý phúc khảo
+6. Giảng viên finalize điểm
 
 ### 4. Phát hành chứng chỉ
 1. Giảng viên/Admin phát hành chứng chỉ NFT
